@@ -1,0 +1,16 @@
+# Database configuration
+database:
+  url: postgres://username:password@localhost:5432/auth_service_db
+
+# gRPC server configuration
+grpc:
+  port: 50051
+
+# JWT configuration
+jwt:
+  secret: your_jwt_secret_key_here
+  expiration_hours: 24
+
+# Application environment
+app:
+  environment: development

@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package auth;
+
+option go_package = "auth-service/proto/generated;generated";
+
+// AuthService defines the authentication-related operations
+service AuthService {
+  // Register a new user
+  rpc Register (RegisterRequest) returns (RegisterResponse);
+
+  // Refresh access tokens
+  rpc RefreshAccessToken (RefreshTokenRequest) returns (RefreshTokenResponse);
+}
+
+// Request and Response messages
+
+// RegisterRequest contains the details for a new user
+message RegisterRequest {
+  string username = 1; // User's username
+  string email = 2;    // User's email
+  string password = 3; // User's password
+}
+
+// RegisterResponse contains the result of a user registration
+message RegisterResponse {
+  string id = 1;           // User's unique ID
+  string username = 2;     // User's username
+  string email = 3;        // User's email
+  string access_token = 4; // JWT access token
+  string refresh_token = 5; // Refresh token
+}
+
+// RefreshTokenRequest contains the refresh token for renewing access
+message RefreshTokenRequest {
+  string refresh_token = 1; // The refresh token
+}
+
+// RefreshTokenResponse contains new access and refresh tokens
+message RefreshTokenResponse {
+  string access_token = 1;  // New JWT access token
+  string refresh_token = 2; // New refresh token
+}
