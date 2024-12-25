@@ -11,6 +11,15 @@ service AuthService {
 
   // Refresh access tokens
   rpc RefreshAccessToken (RefreshTokenRequest) returns (RefreshTokenResponse);
+
+  // Get user by email
+  rpc GetUserByEmail (GetUserRequest) returns (GetUserResponse);
+
+  // Get user by UUID
+  rpc GetUserByUUID (GetUserRequest) returns (GetUserResponse);
+
+  // Get user by username
+  rpc GetUserByUsername (GetUserRequest) returns (GetUserResponse);
 }
 
 // Request and Response messages
@@ -40,4 +49,18 @@ message RefreshTokenRequest {
 message RefreshTokenResponse {
   string access_token = 1;  // New JWT access token
   string refresh_token = 2; // New refresh token
+}
+
+// GetUserRequest contains the identifier to fetch a user
+message GetUserRequest {
+  string identifier = 1; // Email, UUID, or username
+}
+
+// GetUserResponse contains user details
+message GetUserResponse {
+  string id = 1;           // User's unique ID
+  string username = 2;     // User's username
+  string email = 3;        // User's email
+  string created_at = 4;   // Timestamp when the user was created
+  string updated_at = 5;   // Timestamp when the user was last updated
 }

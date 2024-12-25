@@ -23,6 +23,7 @@ func NewAuthService(userRepo *repositories.UserRepository, refreshTokenRepo *rep
 	}
 }
 
+// Signup creates a new user, generates tokens, and saves them in the database
 func (s *AuthService) Signup(ctx context.Context, username, email, password string) (*models.User, string, string, error) {
 	// Validate inputs
 	if err := utils.ValidateEmail(email); err != nil {
@@ -75,6 +76,7 @@ func (s *AuthService) Signup(ctx context.Context, username, email, password stri
 	return user, accessToken, refreshToken, nil
 }
 
+// RefreshAccessToken generates a new AccessToken and RefreshToken
 func (s *AuthService) RefreshAccessToken(refreshToken string) (string, string, error) {
 	// Validate the refresh token
 	tokenData, err := s.RefreshTokenRepo.FindRefreshToken(refreshToken)
@@ -100,4 +102,40 @@ func (s *AuthService) RefreshAccessToken(refreshToken string) (string, string, e
 	}
 
 	return accessToken, newRefreshToken, nil
+}
+
+// GetUserByEmail retrieves a user by their email
+func (s *AuthService) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+	user, err := s.UserRepo.GetUserByEmail(ctx, email)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, errors.New("user not found")
+	}
+	return user, nil
+}
+
+// GetUserByUUID retrieves a user by their UUID
+func (s *AuthService) GetUserByUUID(ctx context.Context, uuid string) (*models.User, error) {
+	user, err := s.UserRepo.GetUserByUUID(ctx, uuid)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, errors.New("user not found")
+	}
+	return user, nil
+}
+
+// GetUserByUsername retrieves a user by their username
+func (s *AuthService) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
+	user, err := s.UserRepo.GetUserByUsername(ctx, username)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, errors.New("user not found")
+	}
+	return user, nil
 }

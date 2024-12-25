@@ -11,17 +11,16 @@ import (
 	"google.golang.org/grpc"
 )
 
-var (
-	username string
-	email    string
-	password string
-)
-
 var signupCmd = &cobra.Command{
 	Use:   "signup",
 	Short: "Sign up a new user",
 	Long:  "Sign up a new user by providing a username, email, and password.",
 	Run: func(cmd *cobra.Command, args []string) {
+		// Local variable declarations
+		username, _ := cmd.Flags().GetString("username")
+		email, _ := cmd.Flags().GetString("email")
+		password, _ := cmd.Flags().GetString("password")
+
 		// Connect to the gRPC server
 		conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
 		if err != nil {
@@ -57,9 +56,9 @@ var signupCmd = &cobra.Command{
 
 func init() {
 	// Add flags for the signup command
-	signupCmd.Flags().StringVarP(&username, "username", "u", "", "Username for the new user")
-	signupCmd.Flags().StringVarP(&email, "email", "e", "", "Email for the new user")
-	signupCmd.Flags().StringVarP(&password, "password", "p", "", "Password for the new user")
+	signupCmd.Flags().String("username", "", "Username for the new user")
+	signupCmd.Flags().String("email", "", "Email for the new user")
+	signupCmd.Flags().String("password", "", "Password for the new user")
 	signupCmd.MarkFlagRequired("username")
 	signupCmd.MarkFlagRequired("email")
 	signupCmd.MarkFlagRequired("password")
