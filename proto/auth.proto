@@ -20,6 +20,9 @@ service AuthService {
 
   // Get user by username
   rpc GetUserByUsername (GetUserRequest) returns (GetUserResponse);
+
+  // Login a user
+  rpc Login (LoginRequest) returns (LoginResponse);
 }
 
 // Request and Response messages
@@ -63,4 +66,16 @@ message GetUserResponse {
   string email = 3;        // User's email
   string created_at = 4;   // Timestamp when the user was created
   string updated_at = 5;   // Timestamp when the user was last updated
+}
+
+// LoginRequest contains the login credentials
+message LoginRequest {
+  string email = 1;    // User's email
+  string password = 2; // User's password
+}
+
+// LoginResponse contains access and refresh tokens
+message LoginResponse {
+  string access_token = 1;  // JWT access token
+  string refresh_token = 2; // Refresh token
 }

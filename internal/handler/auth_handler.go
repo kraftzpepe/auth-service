@@ -32,6 +32,19 @@ func (h *AuthHandler) Register(ctx context.Context, req *pb.RegisterRequest) (*p
 	}, nil
 }
 
+// Implement the Login method
+func (h *AuthHandler) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
+	accessToken, refreshToken, err := h.AuthService.Login(ctx, req.GetEmail(), req.GetPassword())
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.LoginResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}, nil
+}
+
 // gRPC endpoint for refreshing access tokens
 func (h *AuthHandler) RefreshAccessToken(ctx context.Context, req *pb.RefreshTokenRequest) (*pb.RefreshTokenResponse, error) {
 	accessToken, refreshToken, err := h.AuthService.RefreshAccessToken(req.GetRefreshToken())

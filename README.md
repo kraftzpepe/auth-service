@@ -20,5 +20,13 @@ CREATE TABLE refresh_tokens (
 #### Run server
 go run server/main.go
 
-#### CLI Signup
+## CLI
+
+### Signup
 go run cmd/main.go signup --username user1 --email user1@email.com --password "Password1@"
+
+### Login
+go run cmd/main.go login --email user1@email.com --password "Password1@"
+
+### Query User
+go run cmd/main.go query-user --email user1@email.com

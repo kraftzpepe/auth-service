@@ -42,12 +42,12 @@ func (s *AuthService) Signup(ctx context.Context, username, email, password stri
 	// Initialize user
 	now := time.Now()
 	user := &models.User{
-		ID:        uuid.New(), // Generate a new UUID
+		ID:        uuid.New(),
 		Username:  username,
 		Email:     email,
 		Password:  hashedPassword,
-		CreatedAt: now, // Set current timestamp
-		UpdatedAt: now, // Set current timestamp
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
 
 	// Save user to the database
@@ -74,6 +74,42 @@ func (s *AuthService) Signup(ctx context.Context, username, email, password stri
 	}
 
 	return user, accessToken, refreshToken, nil
+}
+
+// Login authenticates a user and issues tokens
+func (s *AuthService) Login(ctx context.Context, email, password string) (string, string, error) {
+	// Fetch the user by email
+	user, err := s.UserRepo.GetUserByEmail(ctx, email)
+	if err != nil {
+		return "", "", errors.New("failed to fetch user")
+	}
+	if user == nil {
+		return "", "", errors.New("invalid email or password")
+	}
+
+	// Verify the password
+	if !utils.CheckPasswordHash(password, user.Password) {
+		return "", "", errors.New("invalid email or password")
+	}
+
+	// Generate tokens
+	accessToken, err := utils.GenerateJWT(user.ID.String())
+	if err != nil {
+		return "", "", errors.New("failed to generate access token")
+	}
+
+	refreshToken, err := utils.GenerateRefreshToken()
+	if err != nil {
+		return "", "", errors.New("failed to generate refresh token")
+	}
+
+	// Save refresh token in the database
+	err = s.RefreshTokenRepo.SaveRefreshToken(user.ID, refreshToken, time.Now().Add(7*24*time.Hour)) // 7 days expiration
+	if err != nil {
+		return "", "", errors.New("failed to save refresh token")
+	}
+
+	return accessToken, refreshToken, nil
 }
 
 // RefreshAccessToken generates a new AccessToken and RefreshToken
