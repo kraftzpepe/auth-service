@@ -85,3 +85,14 @@ func (repo *UserRepository) GetUserByUsername(ctx context.Context, username stri
 
 	return user, nil
 }
+
+// UpdatePassword updates the password for a given user ID
+func (repo *UserRepository) UpdatePassword(ctx context.Context, userID, hashedPassword string) error {
+	query := `
+        UPDATE users
+        SET password = $1, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $2
+    `
+	_, err := repo.DB.ExecContext(ctx, query, hashedPassword, userID)
+	return err
+}

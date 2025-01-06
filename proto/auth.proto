@@ -23,6 +23,12 @@ service AuthService {
 
   // Login a user
   rpc Login (LoginRequest) returns (LoginResponse);
+
+  // Request password reset
+  rpc RequestPasswordReset (RequestPasswordResetRequest) returns (RequestPasswordResetResponse);
+
+  // Reset password
+  rpc ResetPassword (ResetPasswordRequest) returns (ResetPasswordResponse);
 }
 
 // Request and Response messages
@@ -78,4 +84,25 @@ message LoginRequest {
 message LoginResponse {
   string access_token = 1;  // JWT access token
   string refresh_token = 2; // Refresh token
+}
+
+// RequestPasswordResetRequest contains the email for initiating a password reset
+message RequestPasswordResetRequest {
+  string email = 1; // User's email
+}
+
+// RequestPasswordResetResponse contains a confirmation message
+message RequestPasswordResetResponse {
+  string message = 1; // Confirmation or error message
+}
+
+// ResetPasswordRequest contains the reset token and new password
+message ResetPasswordRequest {
+  string token = 1;       // Password reset token
+  string new_password = 2; // New password
+}
+
+// ResetPasswordResponse contains a confirmation message
+message ResetPasswordResponse {
+  string message = 1; // Confirmation or error message
 }

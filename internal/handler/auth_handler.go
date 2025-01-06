@@ -58,6 +58,28 @@ func (h *AuthHandler) RefreshAccessToken(ctx context.Context, req *pb.RefreshTok
 	}, nil
 }
 
+func (h *AuthHandler) RequestPasswordReset(ctx context.Context, req *pb.RequestPasswordResetRequest) (*pb.RequestPasswordResetResponse, error) {
+	message, err := h.AuthService.RequestPasswordReset(ctx, req.GetEmail())
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.RequestPasswordResetResponse{
+		Message: message,
+	}, nil
+}
+
+func (h *AuthHandler) ResetPassword(ctx context.Context, req *pb.ResetPasswordRequest) (*pb.ResetPasswordResponse, error) {
+	message, err := h.AuthService.ResetPassword(ctx, req.GetToken(), req.GetNewPassword())
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.ResetPasswordResponse{
+		Message: message,
+	}, nil
+}
+
 // gRPC endpoint for getting a user by email
 func (h *AuthHandler) GetUserByEmail(ctx context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error) {
 	user, err := h.AuthService.GetUserByEmail(ctx, req.GetIdentifier())

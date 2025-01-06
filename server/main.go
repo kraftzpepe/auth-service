@@ -40,9 +40,10 @@ func main() {
 	// Initialize repositories
 	userRepo := repositories.NewUserRepository(database)
 	refreshTokenRepo := repositories.NewRefreshTokenRepository(database)
+	passwordResetTokenRepo := repositories.NewPasswordResetTokenRepository(database)
 
 	// Initialize services
-	authService := service.NewAuthService(userRepo, refreshTokenRepo)
+	authService := service.NewAuthService(userRepo, refreshTokenRepo, passwordResetTokenRepo)
 
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(authService)

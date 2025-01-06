@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"errors"
+	"log"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,14 +14,20 @@ import (
 )
 
 type AuthService struct {
-	UserRepo         *repositories.UserRepository
-	RefreshTokenRepo *repositories.RefreshTokenRepository
+	UserRepo               *repositories.UserRepository
+	RefreshTokenRepo       *repositories.RefreshTokenRepository
+	PasswordResetTokenRepo *repositories.PasswordResetTokenRepository
 }
 
-func NewAuthService(userRepo *repositories.UserRepository, refreshTokenRepo *repositories.RefreshTokenRepository) *AuthService {
+func NewAuthService(
+	userRepo *repositories.UserRepository,
+	refreshTokenRepo *repositories.RefreshTokenRepository,
+	passwordResetTokenRepo *repositories.PasswordResetTokenRepository,
+) *AuthService {
 	return &AuthService{
-		UserRepo:         userRepo,
-		RefreshTokenRepo: refreshTokenRepo,
+		UserRepo:               userRepo,
+		RefreshTokenRepo:       refreshTokenRepo,
+		PasswordResetTokenRepo: passwordResetTokenRepo,
 	}
 }
 
@@ -53,6 +61,12 @@ func (s *AuthService) Signup(ctx context.Context, username, email, password stri
 	// Save user to the database
 	err = s.UserRepo.CreateUser(ctx, user)
 	if err != nil {
+		if strings.Contains(err.Error(), "users_username_key") {
+			return nil, "", "", errors.New("username is already taken")
+		}
+		if strings.Contains(err.Error(), "users_email_key") {
+			return nil, "", "", errors.New("email is already registered")
+		}
 		return nil, "", "", errors.New("failed to save user")
 	}
 
@@ -78,21 +92,15 @@ func (s *AuthService) Signup(ctx context.Context, username, email, password stri
 
 // Login authenticates a user and issues tokens
 func (s *AuthService) Login(ctx context.Context, email, password string) (string, string, error) {
-	// Fetch the user by email
 	user, err := s.UserRepo.GetUserByEmail(ctx, email)
-	if err != nil {
-		return "", "", errors.New("failed to fetch user")
-	}
-	if user == nil {
+	if err != nil || user == nil {
 		return "", "", errors.New("invalid email or password")
 	}
 
-	// Verify the password
 	if !utils.CheckPasswordHash(password, user.Password) {
 		return "", "", errors.New("invalid email or password")
 	}
 
-	// Generate tokens
 	accessToken, err := utils.GenerateJWT(user.ID.String())
 	if err != nil {
 		return "", "", errors.New("failed to generate access token")
@@ -103,8 +111,7 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 		return "", "", errors.New("failed to generate refresh token")
 	}
 
-	// Save refresh token in the database
-	err = s.RefreshTokenRepo.SaveRefreshToken(user.ID, refreshToken, time.Now().Add(7*24*time.Hour)) // 7 days expiration
+	err = s.RefreshTokenRepo.SaveRefreshToken(user.ID, refreshToken, time.Now().Add(7*24*time.Hour))
 	if err != nil {
 		return "", "", errors.New("failed to save refresh token")
 	}
@@ -112,15 +119,78 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 	return accessToken, refreshToken, nil
 }
 
+// RequestPasswordReset generates a reset token and sends it to the user's email
+func (s *AuthService) RequestPasswordReset(ctx context.Context, email string) (string, error) {
+	// Fetch the user by email
+	user, err := s.UserRepo.GetUserByEmail(ctx, email)
+	if err != nil || user == nil {
+		return "", errors.New("user not found")
+	}
+
+	// Generate a reset token
+	resetToken, err := utils.GenerateRefreshToken() // Reuse the token generation logic
+	if err != nil {
+		return "", errors.New("failed to generate reset token")
+	}
+
+	// Set expiration time (e.g., 15 minutes)
+	expiresAt := time.Now().Add(15 * time.Minute)
+
+	// Save the token to the database
+	err = s.PasswordResetTokenRepo.SaveToken(user.ID, resetToken, expiresAt)
+	if err != nil {
+		return "", errors.New("failed to save reset token")
+	}
+
+	// Send the reset token via email
+	err = utils.SendPasswordResetEmail(email, resetToken)
+	if err != nil {
+		return "", errors.New("failed to send password reset email")
+	}
+
+	return "Password reset email sent successfully.", nil
+}
+
+// ResetPassword verifies the reset token and updates the user's password
+func (s *AuthService) ResetPassword(ctx context.Context, token, newPassword string) (string, error) {
+	resetToken, err := s.PasswordResetTokenRepo.FindToken(token)
+	if err != nil || resetToken == nil {
+		log.Printf("Token not found or error: %v", err)
+		return "", errors.New("invalid or expired token")
+	}
+
+	log.Printf("Reset Token: %+v", resetToken)
+
+	if resetToken.ExpiresAt.Before(time.Now()) {
+		log.Printf("Token expired at: %s", resetToken.ExpiresAt)
+		return "", errors.New("invalid or expired token")
+	}
+
+	hashedPassword, err := utils.HashPassword(newPassword)
+	if err != nil {
+		return "", errors.New("failed to hash password")
+	}
+
+	err = s.UserRepo.UpdatePassword(ctx, resetToken.UserID.String(), hashedPassword)
+	if err != nil {
+		return "", errors.New("failed to update password")
+	}
+
+	err = s.PasswordResetTokenRepo.DeleteToken(token)
+	if err != nil {
+		return "", errors.New("failed to delete reset token")
+	}
+
+	return "Password has been reset successfully.", nil
+}
+
 // RefreshAccessToken generates a new AccessToken and RefreshToken
 func (s *AuthService) RefreshAccessToken(refreshToken string) (string, string, error) {
-	// Validate the refresh token
 	tokenData, err := s.RefreshTokenRepo.FindRefreshToken(refreshToken)
 	if err != nil || tokenData.ExpiresAt.Before(time.Now()) {
 		return "", "", errors.New("invalid or expired refresh token")
 	}
 
-	// Generate new tokens
 	accessToken, err := utils.GenerateJWT(tokenData.UserID.String())
 	if err != nil {
 		return "", "", errors.New("failed to generate access token")
@@ -131,7 +201,6 @@ func (s *AuthService) RefreshAccessToken(refreshToken string) (string, string, e
 		return "", "", errors.New("failed to generate refresh token")
 	}
 
-	// Update refresh token in the database
 	err = s.RefreshTokenRepo.UpdateRefreshToken(tokenData.UserID, newRefreshToken, time.Now().Add(7*24*time.Hour))
 	if err != nil {
 		return "", "", errors.New("failed to update refresh token")

@@ -17,3 +17,13 @@ func Execute() {
 		log.Fatalf("Error executing command: %v", err)
 	}
 }
+
+func init() {
+	// Ensure all commands are initialized
+	rootCmd.AddCommand(queryUserCmd)
+	rootCmd.AddCommand(loginCmd)
+	rootCmd.AddCommand(signupCmd)
+	rootCmd.AddCommand(updatePasswordCmd)
+	rootCmd.AddCommand(requestPasswordResetCmd)
+	rootCmd.AddCommand(resetPasswordCmd) // Ensure reset-password is added
+}
